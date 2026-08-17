@@ -22,14 +22,11 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Username already exists' });
     }
 
-    // Hash mật khẩu
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Tạo user mới
+    // Tạo user mới (lưu mật khẩu chưa mã hóa)
     const user = await prisma.user.create({
       data: {
         username,
-        password: hashedPassword
+        password: password
       }
     });
 
@@ -54,9 +51,8 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid username or password' });
     }
 
-    // Kiểm tra mật khẩu
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
+    // Kiểm tra mật khẩu trực tiếp
+    if (password !== user.password) {
       return res.status(401).json({ error: 'Invalid username or password' });
     }
 

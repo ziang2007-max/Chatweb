@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 import MessageList from '../components/MessageList';
 import MessageInput from '../components/MessageInput';
-import OnlineUsersList from '../components/OnlineUsersList';
+import FriendsList from '../components/FriendsList';
 import VideoCallModal from '../components/VideoCallModal';
 
 function Chat({ setIsAuthenticated }) {
@@ -12,6 +12,10 @@ function Chat({ setIsAuthenticated }) {
   const [activeChat, setActiveChat] = useState(null); // null means Global Chat
   const activeChatRef = useRef(null);
   
+  // Friend States
+  const [friends, setFriends] = useState([]);
+  const [friendRequests, setFriendRequests] = useState([]);
+
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user'));
   const socketRef = useRef(null);
@@ -31,6 +35,17 @@ function Chat({ setIsAuthenticated }) {
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
 
+  const fetchFriends = async () => {
+    try {
+      const res = await fetch(`${backendUrl}/api/users/${user.id}/friends`);
+      const data = await res.json();
+      setFriends(data.friends || []);
+      setFriendRequests(data.friendRequests || []);
+    } catch (error) {
+      console.error('Failed to fetch friends:', error);
+    }
+  };
+
   const fetchMessages = () => {
     let url = `${backendUrl}/api/messages`;
     if (activeChatRef.current) {
@@ -41,6 +56,12 @@ function Chat({ setIsAuthenticated }) {
       .then(data => setMessages(data))
       .catch(err => console.error('Failed to fetch messages:', err));
   };
+
+  useEffect(() => {
+    if (user) {
+      fetchFriends();
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     activeChatRef.current = activeChat;
@@ -125,6 +146,46 @@ function Chat({ setIsAuthenticated }) {
         authorId: user.id,
         receiverId: activeChat ? activeChat.id : null
       });
+    }
+  };
+
+  // --- Friendship Methods ---
+  const handleSendRequest = async (friendId) => {
+    try {
+      await fetch(`${backendUrl}/api/users/friends/request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, friendId })
+      });
+      alert('Đã gửi lời mời kết bạn!');
+    } catch (error) {
+      console.error('Send request error:', error);
+    }
+  };
+
+  const handleAcceptRequest = async (requestId) => {
+    try {
+      await fetch(`${backendUrl}/api/users/friends/accept`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId })
+      });
+      fetchFriends(); // Refresh lists
+    } catch (error) {
+      console.error('Accept error:', error);
+    }
+  };
+
+  const handleRejectRequest = async (requestId) => {
+    try {
+      await fetch(`${backendUrl}/api/users/friends/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId })
+      });
+      fetchFriends(); // Refresh lists
+    } catch (error) {
+      console.error('Reject error:', error);
     }
   };
 
@@ -270,7 +331,7 @@ function Chat({ setIsAuthenticated }) {
         </div>
         
         <div className="glass-panel messages-area">
-          <MessageList messages={messages} currentUserId={user.id} />
+          <MessageList messages={messages} currentUserId={user.id} isGlobalChat={!activeChat} />
         </div>
 
         <div className="glass-panel message-input-area">
@@ -279,11 +340,16 @@ function Chat({ setIsAuthenticated }) {
       </div>
 
       <div className="sidebar-area">
-        <OnlineUsersList 
-          users={onlineUsers} 
+        <FriendsList 
+          friends={friends}
+          friendRequests={friendRequests}
+          onlineUsers={onlineUsers} 
           currentUserId={user.id} 
           onCallUser={callUser}
           onStartChat={(chatUser) => setActiveChat(chatUser)}
+          onSendRequest={handleSendRequest}
+          onAcceptRequest={handleAcceptRequest}
+          onRejectRequest={handleRejectRequest}
         />
       </div>
 

@@ -22,8 +22,11 @@ app.use(express.json());
 // Active Users Mapping (socket.id -> user info)
 const activeUsers = new Map();
 
+const usersRoutes = require('./routes/users');
+
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/users', usersRoutes);
 
 // Socket.IO
 io.on('connection', (socket) => {

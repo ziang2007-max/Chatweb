@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-function MessageList({ messages, currentUserId }) {
+function MessageList({ messages, currentUserId, isGlobalChat }) {
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -13,7 +13,15 @@ function MessageList({ messages, currentUserId }) {
 
   return (
     <>
-      {messages.length === 0 ? (
+      {isGlobalChat && (
+        <div className="message-wrapper others">
+          <div className="message-author" style={{ color: '#ff4d4f' }}>Admin</div>
+          <div className="message-bubble" style={{ background: 'rgba(255, 77, 79, 0.1)', border: '1px solid rgba(255, 77, 79, 0.3)' }}>
+            Chào mừng đến với web chat vớ vẩn, nơi những câu chuyện được cất giấu
+          </div>
+        </div>
+      )}
+      {messages.length === 0 && !isGlobalChat ? (
         <div style={{ textAlign: 'center', color: 'var(--text-secondary)', marginTop: '2rem' }}>
           No messages yet. Be the first to say hi!
         </div>

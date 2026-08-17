@@ -8,12 +8,14 @@ datasource db {
 }
 
 model User {
-  id               Int       @id @default(autoincrement())
-  username         String    @unique
+  id               Int          @id @default(autoincrement())
+  username         String       @unique
   password         String
-  createdAt        DateTime  @default(now())
-  messages         Message[] @relation("SentMessages")
-  receivedMessages Message[] @relation("ReceivedMessages")
+  createdAt        DateTime     @default(now())
+  messages         Message[]    @relation("SentMessages")
+  receivedMessages Message[]    @relation("ReceivedMessages")
+  friendships1     Friendship[] @relation("FriendshipsUser1")
+  friendships2     Friendship[] @relation("FriendshipsUser2")
 }
 
 model Message {
@@ -24,4 +26,16 @@ model Message {
   authorId   Int
   receiver   User?    @relation("ReceivedMessages", fields: [receiverId], references: [id])
   receiverId Int?
+}
+
+model Friendship {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  friendId  Int
+  status    String   @default("PENDING") // PENDING, ACCEPTED
+  user      User     @relation("FriendshipsUser1", fields: [userId], references: [id])
+  friend    User     @relation("FriendshipsUser2", fields: [friendId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, friendId])
 }
