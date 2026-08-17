@@ -133,11 +133,11 @@ router.post('/friends/reject', async (req, res) => {
   try {
     const { requestId } = req.body;
 
-    await prisma.friendship.delete({
+    const friendship = await prisma.friendship.delete({
       where: { id: parseInt(requestId) }
     });
 
-    res.json({ message: 'Friend request rejected/removed' });
+    res.json({ message: 'Friend request rejected/removed', friendship });
   } catch (error) {
     console.error('Reject request error:', error);
     res.status(500).json({ error: 'Internal server error' });

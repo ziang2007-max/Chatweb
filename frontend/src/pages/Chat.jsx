@@ -101,6 +101,10 @@ function Chat({ setIsAuthenticated }) {
       setOnlineUsers(users);
     });
 
+    socketRef.current.on('receiveFriendRequest', () => {
+      fetchFriends();
+    });
+
     // --- WebRTC Signaling Listeners ---
     socketRef.current.on('callUser', ({ from, name, signal }) => {
       setIsReceivingCall(true);
@@ -157,6 +161,9 @@ function Chat({ setIsAuthenticated }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id, friendId })
       });
+      if (socketRef.current) {
+        socketRef.current.emit('sendFriendRequest', { senderId: user.id, receiverId: friendId });
+      }
       alert('Đã gửi lời mời kết bạn!');
     } catch (error) {
       console.error('Send request error:', error);
@@ -165,12 +172,17 @@ function Chat({ setIsAuthenticated }) {
 
   const handleAcceptRequest = async (requestId) => {
     try {
-      await fetch(`${backendUrl}/api/users/friends/accept`, {
+      const response = await fetch(`${backendUrl}/api/users/friends/accept`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ requestId })
       });
+      const data = await response.json();
       fetchFriends(); // Refresh lists
+      if (socketRef.current && data.friendship) {
+        const otherUserId = data.friendship.userId === user.id ? data.friendship.friendId : data.friendship.userId;
+        socketRef.current.emit('friendRequestHandled', { receiverId: otherUserId });
+      }
     } catch (error) {
       console.error('Accept error:', error);
     }
@@ -178,12 +190,17 @@ function Chat({ setIsAuthenticated }) {
 
   const handleRejectRequest = async (requestId) => {
     try {
-      await fetch(`${backendUrl}/api/users/friends/reject`, {
+      const response = await fetch(`${backendUrl}/api/users/friends/reject`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ requestId })
       });
+      const data = await response.json();
       fetchFriends(); // Refresh lists
+      if (socketRef.current && data.friendship) {
+        const otherUserId = data.friendship.userId === user.id ? data.friendship.friendId : data.friendship.userId;
+        socketRef.current.emit('friendRequestHandled', { receiverId: otherUserId });
+      }
     } catch (error) {
       console.error('Reject error:', error);
     }

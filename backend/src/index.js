@@ -61,6 +61,19 @@ io.on('connection', (socket) => {
   socket.on('endCall', (data) => {
     io.to(data.to).emit('callEnded');
   });
+
+  socket.on('sendFriendRequest', (data) => {
+    const { receiverId } = data;
+    const receivers = Array.from(activeUsers.values()).filter(u => u.id === parseInt(receiverId));
+    receivers.forEach(r => io.to(r.socketId).emit('receiveFriendRequest'));
+  });
+
+  socket.on('friendRequestHandled', (data) => {
+    const { receiverId } = data;
+    const receivers = Array.from(activeUsers.values()).filter(u => u.id === parseInt(receiverId));
+    receivers.forEach(r => io.to(r.socketId).emit('receiveFriendRequest'));
+  });
+
   // -------------------------
 
   // Xử lý khi user gửi tin nhắn mới
