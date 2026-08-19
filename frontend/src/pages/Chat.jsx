@@ -68,6 +68,29 @@ function Chat({ setIsAuthenticated }) {
     fetchMessages();
   }, [activeChat]);
 
+  const playNotificationSound = () => {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+      
+      gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.05);
+      gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.2);
+    } catch(e) {
+      console.log("Audio play error", e);
+    }
+  };
+
   useEffect(() => {
     if (!user) {
       setIsAuthenticated(false);
@@ -80,6 +103,9 @@ function Chat({ setIsAuthenticated }) {
 
     // Listeners
     socketRef.current.on('newMessage', (message) => {
+      if (message.authorId !== user.id) {
+        playNotificationSound();
+      }
       setMessages((prev) => {
         const currentActiveChat = activeChatRef.current;
         const isGlobalMessage = !message.receiverId;
@@ -143,10 +169,15 @@ function Chat({ setIsAuthenticated }) {
     navigate('/login');
   };
 
-  const handleSendMessage = (content) => {
-    if (content.trim() && socketRef.current) {
+  const handleSendMessage = (messageData) => {
+    const isString = typeof messageData === 'string';
+    const content = isString ? messageData : messageData.content;
+    const type = isString ? 'TEXT' : messageData.type;
+
+    if (content && socketRef.current) {
       socketRef.current.emit('sendMessage', {
         content,
+        type,
         authorId: user.id,
         receiverId: activeChat ? activeChat.id : null
       });
@@ -333,7 +364,14 @@ function Chat({ setIsAuthenticated }) {
             <h2>{activeChat ? `Chat with ${activeChat.username}` : "Global Chat Room"}</h2>
             <p>Logged in as: <strong>{user.username}</strong></p>
           </div>
-          <div style={{ display: 'flex', gap: '1rem' }}>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <button 
+              className="logout-btn" 
+              style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
+              onClick={() => navigate('/feed')}
+            >
+              News Feed
+            </button>
             {activeChat && (
               <button 
                 className="logout-btn" 

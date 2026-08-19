@@ -16,11 +16,14 @@ model User {
   receivedMessages Message[]    @relation("ReceivedMessages")
   friendships1     Friendship[] @relation("FriendshipsUser1")
   friendships2     Friendship[] @relation("FriendshipsUser2")
+  posts            Post[]       @relation("UserPosts")
+  comments         Comment[]    @relation("UserComments")
 }
 
 model Message {
   id         Int      @id @default(autoincrement())
   content    String
+  type       String   @default("TEXT")
   createdAt  DateTime @default(now())
   author     User     @relation("SentMessages", fields: [authorId], references: [id])
   authorId   Int
@@ -38,4 +41,27 @@ model Friendship {
   createdAt DateTime @default(now())
 
   @@unique([userId, friendId])
+}
+
+model Post {
+  id        Int       @id @default(autoincrement())
+  imageUrl  String?
+  caption   String?
+  createdAt DateTime  @default(now())
+  author    User      @relation("UserPosts", fields: [authorId], references: [id])
+  authorId  Int
+  comments  Comment[]
+}
+
+model Comment {
+  id        Int       @id @default(autoincrement())
+  content   String
+  createdAt DateTime  @default(now())
+  post      Post      @relation(fields: [postId], references: [id])
+  postId    Int
+  author    User      @relation("UserComments", fields: [authorId], references: [id])
+  authorId  Int
+  parentId  Int?
+  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies   Comment[] @relation("CommentReplies")
 }

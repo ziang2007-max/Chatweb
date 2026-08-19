@@ -31,8 +31,14 @@ function MessageList({ messages, currentUserId, isGlobalChat }) {
           return (
             <div key={index} className={`message-wrapper ${isMine ? 'mine' : 'others'}`}>
               {!isMine && <div className="message-author">{msg.author?.username || 'Unknown'}</div>}
-              <div className="message-bubble">
-                {msg.content}
+              <div className="message-bubble" style={msg.type === 'IMAGE' ? { padding: '0.5rem', background: 'transparent' } : {}}>
+                {msg.type === 'IMAGE' ? (
+                  <img src={msg.content} alt="Sent" style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '8px' }} />
+                ) : msg.type === 'AUDIO' ? (
+                  <audio controls src={msg.content} style={{ maxWidth: '100%', outline: 'none' }} />
+                ) : (
+                  msg.content
+                )}
               </div>
             </div>
           );

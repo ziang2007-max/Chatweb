@@ -17,16 +17,19 @@ const io = new Server(server, {
 const prisma = new PrismaClient();
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Active Users Mapping (socket.id -> user info)
 const activeUsers = new Map();
 
 const usersRoutes = require('./routes/users');
+const postsRoutes = require('./routes/posts');
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/posts', postsRoutes);
 
 // Socket.IO
 io.on('connection', (socket) => {
@@ -79,13 +82,14 @@ io.on('connection', (socket) => {
   // Xử lý khi user gửi tin nhắn mới
   socket.on('sendMessage', async (data) => {
     try {
-      const { content, authorId, receiverId } = data;
+      const { content, authorId, receiverId, type = 'TEXT' } = data;
       // Lưu tin nhắn vào DB
       const message = await prisma.message.create({
         data: {
           content,
           authorId: parseInt(authorId),
-          receiverId: receiverId ? parseInt(receiverId) : null
+          receiverId: receiverId ? parseInt(receiverId) : null,
+          type
         },
         include: {
           author: {
@@ -107,6 +111,16 @@ io.on('connection', (socket) => {
       console.error('Error saving message:', error);
     }
   });
+
+  // --- Feed (Posts) Events ---
+  socket.on('newPost', (post) => {
+    io.emit('newPost', post);
+  });
+
+  socket.on('newComment', (comment) => {
+    io.emit('newComment', comment);
+  });
+  // -------------------------
 
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);

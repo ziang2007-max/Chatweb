@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Chat from './pages/Chat';
+import Feed from './pages/Feed';
 import { useState, useEffect } from 'react';
 
 function App() {
@@ -35,6 +36,10 @@ function App() {
         <Route 
           path="/" 
           element={isAuthenticated ? <Chat setIsAuthenticated={setIsAuthenticated} /> : <Navigate to="/login" />} 
+        />
+        <Route 
+          path="/feed" 
+          element={isAuthenticated ? <Feed /> : <Navigate to="/login" />} 
         />
       </Routes>
     </Router>
